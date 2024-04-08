@@ -18,7 +18,7 @@ BLACK = (0, 0, 0)  # Definerer fargen svart
 RED = (255, 0, 0)  # Definerer fargen rød
 BLUE = (0, 0, 255)  # Definerer fargen blå
 GREEN = (0, 255, 0)  # Definerer fargen grønn
-IDK = (255, 0, 255)  # Definerer fargen lilla
+LILLA = (255, 0, 255)  # Definerer fargen lilla
 
 # Skjermstørrelse
 SCREEN_WIDTH = 800  # Bredde på spillvinduet
@@ -65,15 +65,15 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = y
         self.bærerSau = False
 
-    def update(self, platforms):
+    def update(self, platforms, sauer, safezones):
         keys = pygame.key.get_pressed()  # Henter tastetrykkene
-        if keys[pygame.K_LEFT]:  # Sjekker om venstre-piltasten er trykket
+        if keys[pygame.K_a]:  # Sjekker om venstre-piltasten er trykket
             self.rect.x -= self.vfart  # Flytter spilleren mot venstre
-        if keys[pygame.K_RIGHT]:  # Sjekker om høyre-piltasten er trykket
+        if keys[pygame.K_d]:  # Sjekker om høyre-piltasten er trykket
             self.rect.x += self.hfart  # Flytter spilleren mot høyre
-        if keys[pygame.K_DOWN]:  # Sjekker om ned-piltasten er trykket
+        if keys[pygame.K_s]:  # Sjekker om ned-piltasten er trykket
             self.rect.y += self.nfart  # FLytter spilleren ned
-        if keys[pygame.K_UP]:  # Sjekker om opp-piltasten er trykket
+        if keys[pygame.K_w]:  # Sjekker om opp-piltasten er trykket
             self.rect.y -= self.ofart  # Flytter spilleren opp
         
         self.hfart = PLAYER_SPEED
@@ -85,7 +85,20 @@ class Player(pygame.sprite.Sprite):
             if self.rect.colliderect(platform.rect):  # Sjekker om det er kollisjon med en plattform
                 self.hfart = 0
                 self.vfart = 0
-                
+        
+        self.bærerSau = False  # Setter at spilleren ikke er på bakken
+        for sau in sauer:  # Går gjennom alle sauene
+            if pygame.sprite.collide_rect(self, sau):  # Sjekker om det er kollisjon med en sau
+                self.bærerSau = True
+                break  # Avslutter løkken når en sau er funnet
+
+        for safezone in safezones:
+            if self.bærerSau == True and self.rect.colliderect(safezone.rect):
+                self.bærerSau = False
+                sau = Sau(740, random.randint(0, 500))
+                all_sprites.add(sau)
+                sauer.add(sau)
+
         # Sjekk om spilleren går ut av skjermen
         if self.rect.top < 0 :
             self.ofart = 0
@@ -109,7 +122,7 @@ class Sau(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.image = pygame.Surface((SAU_WIDTH, SAU_HEIGHT))
-        self.image.fill(IDK)
+        self.image.fill(LILLA)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -147,24 +160,15 @@ all_sprites = pygame.sprite.Group()  # Oppretter gruppen for alle sprites
 platforms = pygame.sprite.Group()  # Oppretter gruppen for plattformene
 sauer = pygame.sprite.Group()
 spokelser = pygame.sprite.Group()
+safezones = pygame.sprite.Group()
 
 
 safezone_venstre = Safezone(80, 600, 0, 0)
 all_sprites.add(safezone_venstre)
+safezones.add(safezone_venstre)
 
 safezone_høyre = Safezone(720, 600, 720, 0)
 all_sprites.add(safezone_høyre)
-
-# Legg til spilleren
-player = Player(15, 300)  # Oppretter en spiller
-all_sprites.add(player)  # Legger til spilleren i alle sprites
-
-# Legg til plattformer
-for i in range(3):  # Oppretter 3 plattformer
-    platform = Platform(random.randint(100, 700),  # Tilfeldig x-posisjon
-                        random.randint(100, 600))  # Tilfeldig y-posisjon
-    all_sprites.add(platform)  # Legger til plattformen i alle sprites
-    platforms.add(platform)  # Legger til plattformen i plattform-gruppen
 
 # Legg til sauer
 for i in range(3):  # Oppretter 3 sauer
@@ -178,7 +182,16 @@ for i in range(1):  # Oppretter 3 sauer
     all_sprites.add(spokelse)  # Legger til spøkelset i alle sprites
     spokelser.add(spokelse)  # Legger til spøkelset i spokelse-gruppen
 
+# Legg til spilleren
+player = Player(15, 300)  # Oppretter en spiller
+all_sprites.add(player)  # Legger til spilleren i alle sprites
 
+# Legg til plattformer
+for i in range(3):  # Oppretter 3 plattformer
+    platform = Platform(random.randint(100, 700),  # Tilfeldig x-posisjon
+                        random.randint(100, 600))  # Tilfeldig y-posisjon
+    all_sprites.add(platform)  # Legger til plattformen i alle sprites
+    platforms.add(platform)  # Legger til plattformen i plattform-gruppen
 
 
 # Spilloppdatering
@@ -190,7 +203,7 @@ while running:
             running = False  # Setter running til False for å avslutte spillet
 
     # Oppdatering av spilleren
-    player.update(platforms)
+    player.update(platforms, sauer, safezones)
 
     # Tegn alt på skjermen
     screen.fill(BLACK)  # Fyller skjermen med svart farge
